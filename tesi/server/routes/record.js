@@ -2252,6 +2252,8 @@ recordRoutes.route("/chartConCFreale").post(async function (req, res) {
 
       //media giornaliera
       var consumoEl = await db_connect.collection("consumoReale").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gt: oraG } }] }).toArray();
+      if(consumoEl.length===0)
+        break;
       for (var j = 0; j < consumoEl.length; j++) {
         totConsumoGel = totConsumoGel + consumoEl[j].consumo
         numConsGel = numConsGel + 1
