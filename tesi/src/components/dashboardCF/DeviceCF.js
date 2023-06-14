@@ -9,6 +9,8 @@ import Sidebar from '../Sidebar';
 import Card from '../Card';
 import { utcToZonedTime } from 'date-fns-tz'
 import { formatISO } from 'date-fns';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -52,6 +54,98 @@ function DeviceCF() {
     const [chartDataSo, setChartDataSo] = useState({});
     const [chartDataEo, setChartDataEo] = useState({});
     const [chartDataW, setChartDataW] = useState({});
+
+    const [gioChartDataE, setGioChartDataE] = useState({});
+    //const [gioChartDataSe, setGioChartDataSe] = useState({});
+    const [gioChartDataSo, setGioChartDataSo] = useState({});
+    const [gioChartDataEo, setGioChartDataEo] = useState({});
+    //const [gioChartDataW, setGioChartDataW] = useState({});
+
+    const [selectedDateEl, setSelectedDateEl] = useState(null);
+    const [selectedDateSo, setSelectedDateSo] = useState(null);
+    const [selectedDateEo, setSelectedDateEo] = useState(null);
+
+    const [idDeviceGio, setIdDeviceGio] = useState(null);
+    const [tipoHardwareGio, setTipoHardwareGio] = useState(null);
+
+    const handleDateChange = (date) => {
+        const change = async (date) => {
+            var response = await axios.post('http://localhost:5000/changeChart', {idDeviceGio,tipoHardwareGio,date});            
+            let gioLabels = [];
+            let gioConsumi = [];
+            gioLabels = response.data[1]
+            gioConsumi = response.data[0]
+            switch (tipoHardwareGio) {
+                case 1:
+                    setSelectedDateEl(date)
+                    setGioChartDataE({
+                        labels: gioLabels,
+                        datasets: [
+                            {
+                                label: 'Consumi',
+                                data: gioConsumi,
+                                backgroundColor: 'rgb(204, 255, 153, 0.3)',   //colore dell'area sottostante alla curva  (0.3 è l'opacità)
+                                borderColor: 'rgb(110, 251, 0)',
+                                fill: false,
+                                tension: 0.1
+                            }
+                        ],
+                        options: {
+                            responsive: true
+                        }
+                    })
+                    break;
+                case 4:
+                    
+                    break;
+                case 2:
+                    setSelectedDateSo(date)
+                    setGioChartDataSo({
+                        labels: gioLabels,
+                        datasets: [
+                            {
+                                label: 'Consumi',
+                                data: gioConsumi,
+                                backgroundColor: 'rgb(204, 255, 153, 0.3)',   //colore dell'area sottostante alla curva  (0.3 è l'opacità)
+                                borderColor: 'rgb(110, 251, 0)',
+                                fill: false,
+                                tension: 0.1
+                            }
+                        ],
+                        options: {
+                            responsive: true
+                        }
+                    })
+                    break;
+                case 3:
+                    setSelectedDateEo(date)
+                    setGioChartDataEo({
+                        labels: gioLabels,
+                        datasets: [
+                            {
+                                label: 'Consumi',
+                                data: gioConsumi,
+                                backgroundColor: 'rgb(204, 255, 153, 0.3)',   //colore dell'area sottostante alla curva  (0.3 è l'opacità)
+                                borderColor: 'rgb(110, 251, 0)',
+                                fill: false,
+                                tension: 0.1
+                            }
+                        ],
+                        options: {
+                            responsive: true
+                        }
+                    })
+                    break;
+                case 5:
+                    
+                    break;
+                default:
+                    break;
+            }
+
+        }
+        change(date)
+      };
 
 
     const auth = useAuth(); //oggetto autorizzazione
@@ -115,6 +209,9 @@ function DeviceCF() {
         tr.appendChild(td);  //inserisco la cella nella riga
         tr.className = "bg-white border-b dark:bg-gray-800 dark:border-gray-700";  //do uno stile alla riga
         tbody.appendChild(tr);  // aggiungi la riga al corpo della tabella
+
+        //SERVE PER ANNULLARE UN WARNING
+        // eslint-disable-next-line     
     },[]);
     
     //Definisco un effetto per la gestione del componente ProfiloSU e verrà eseguito una sola volta all'avvio del componente. 
@@ -123,6 +220,7 @@ function DeviceCF() {
         const device = async () => {
             //Prendo l'email dell'utente loggato dallo stato di autenticazione
             const email=auth.email;
+
             //richiesta http per prendere i dati del profilo e azienda
             const response = await axios.post('http://localhost:5000/deviceCF', {email});
             // Se la risposta del server contiene dati validi, creo le tabelle per visualizzarli.
@@ -179,8 +277,11 @@ function DeviceCF() {
         const ora = formatISO(zonedDate,{format:"extended"}); // formatta la data in formato ISO
         var response
         var chartResponse
+        var gioChartResponse
         let labels = [];
         let consumi = [];
+        let gioLabels = [];
+        let gioConsumi = [];
         setData(ora)
         try {
             switch (tipoHardware) {
@@ -205,6 +306,7 @@ function DeviceCF() {
             if(auth.email==="reale@gmail.com"){
                 response = await axios.post('http://localhost:5000/showConsumoDeviceReali', {idDevice,tipoHardware,ora});
                 chartResponse = await axios.post('http://localhost:5000/chartDeviceReale', {idDevice,tipoHardware,ora});
+                gioChartResponse = await axios.post('http://localhost:5000/gioChartDeviceReale', {idDevice,tipoHardware,ora});
             }else{
                 response = await axios.post('http://localhost:5000/showConsumoDevice', {idDevice,tipoHardware,ora});
                 chartResponse = await axios.post('http://localhost:5000/chartDevice', {idDevice,tipoHardware,ora});
@@ -212,6 +314,14 @@ function DeviceCF() {
 
             labels = chartResponse.data[1].reverse()
             consumi = chartResponse.data[0].reverse()
+
+            gioLabels = gioChartResponse.data[1]
+            gioConsumi = gioChartResponse.data[0]
+
+            //per mettere meno valori
+            //gioLabels = gioChartResponse.data[1].filter((_, index) => index % 5 === 0)
+            //gioConsumi = gioChartResponse.data[0].filter((_, index) => index % 5 === 0)
+
             //console.log(consumi)
             switch (tipoHardware) {
                 case 1:
@@ -231,6 +341,24 @@ function DeviceCF() {
                             responsive: true
                         }
                     });
+                    setTipoHardwareGio(tipoHardware)
+                    setIdDeviceGio(idDevice)
+                    setGioChartDataE({
+                        labels: gioLabels,
+                        datasets: [
+                            {
+                                label: 'Consumi',
+                                data: gioConsumi,
+                                backgroundColor: 'rgb(204, 255, 153, 0.3)',   //colore dell'area sottostante alla curva  (0.3 è l'opacità)
+                                borderColor: 'rgb(110, 251, 0)',
+                                fill: false,
+                                tension: 0.1
+                            }
+                        ],
+                        options: {
+                            responsive: true,
+                        }
+                    })
                     break;
                 case 4:
                     setChartDataSe({
@@ -267,6 +395,24 @@ function DeviceCF() {
                             responsive: true
                         }
                     });
+                    setTipoHardwareGio(tipoHardware)
+                    setIdDeviceGio(idDevice)
+                    setGioChartDataSo({
+                        labels: gioLabels,
+                        datasets: [
+                            {
+                                label: 'Produzione',
+                                data: gioConsumi,
+                                backgroundColor: 'rgb(204, 255, 153, 0.3)',   //colore dell'area sottostante alla curva  (0.3 è l'opacità)
+                                borderColor: 'rgb(110, 251, 0)',
+                                fill: false,
+                                tension: 0.1
+                            }
+                        ],
+                        options: {
+                            responsive: true,
+                        }
+                    })
                     break;
                 case 3:
                     setChartDataEo({
@@ -285,6 +431,24 @@ function DeviceCF() {
                             responsive: true
                         }
                     });
+                    setTipoHardwareGio(tipoHardware)
+                    setIdDeviceGio(idDevice)
+                    setGioChartDataEo({
+                        labels: gioLabels,
+                        datasets: [
+                            {
+                                label: 'Produzione',
+                                data: gioConsumi,
+                                backgroundColor: 'rgb(204, 255, 153, 0.3)',   //colore dell'area sottostante alla curva  (0.3 è l'opacità)
+                                borderColor: 'rgb(110, 251, 0)',
+                                fill: false,
+                                tension: 0.1
+                            }
+                        ],
+                        options: {
+                            responsive: true,
+                        }
+                    })
                     break;
                 case 5:
                     setChartDataW({
@@ -402,6 +566,30 @@ function DeviceCF() {
                             <Card src={4} title={"Consumo Medio Mensile"} text={typeof arrE[3] === "number" ? arrE[3] + "w" : arrE[3]} data={data.slice(0, -6).replace('T', ' ')}></Card>
                         </div>
                     }
+                    {Object.keys(gioChartDataE).length === 0 ? (
+                        <></>
+                    ) : (
+                        <div>
+                            <header className="text-2xl bg-grey text-center text-blue-600 text-center" style={{ marginTop: "30px", marginBottom: "30px" }}>
+                                Andamento Consumo Giornaliero
+                            </header>
+                                <DatePicker
+                                    selected={selectedDateEl}
+                                    onChange={handleDateChange}
+                                    dateFormat="dd/MM/yyyy"
+                                    placeholderText="Seleziona una data"
+                                    maxDate={new Date()} // Imposta la data corrente come massima data selezionabile
+                                    showDisabledMonthNavigation
+                                />
+                                <Line data={gioChartDataE} height={536} width={1072} options={{
+                                    elements: {
+                                        point: {
+                                            radius: 0 // Imposta il raggio dei punti a 0 per rimuoverli
+                                        }
+                                    }
+                                }} />
+                        </div>
+                    )}
                     {Object.keys(chartDataE).length === 0 ? (
                         <></>
                     ) : (
@@ -523,6 +711,30 @@ function DeviceCF() {
                             <Card src={2} title={"Produzione Medio Mensile"} text={typeof arrSo[3] === "number" ? arrSo[3] + "w" : arrSo[3]} data={data.slice(0, -6).replace('T', ' ')}></Card>
                         </div>
                     }
+                    {Object.keys(gioChartDataSo).length === 0 ? (
+                        <></>
+                    ) : (
+                        <div>
+                            <header className="text-2xl bg-grey text-center text-blue-600 text-center" style={{ marginTop: "30px", marginBottom: "30px" }}>
+                                Andamento Consumo Giornaliero
+                            </header>
+                                <DatePicker
+                                    selected={selectedDateSo}
+                                    onChange={handleDateChange}
+                                    dateFormat="dd/MM/yyyy"
+                                    placeholderText="Seleziona una data"
+                                    maxDate={new Date()} // Imposta la data corrente come massima data selezionabile
+                                    showDisabledMonthNavigation
+                                />
+                                <Line data={gioChartDataSo} height={536} width={1072} options={{
+                                    elements: {
+                                        point: {
+                                            radius: 0 // Imposta il raggio dei punti a 0 per rimuoverli
+                                        }
+                                    }
+                                }} />
+                        </div>
+                    )}
                     {Object.keys(chartDataSo).length === 0 ? (
                         <></>
                     ) : (
@@ -582,6 +794,30 @@ function DeviceCF() {
                             <Card src={3} title={"Produzione Medio Mensile"} text={typeof arrEo[3] === "number" ? arrEo[3] + "w" : arrEo[3]} data={data.slice(0, -6).replace('T', ' ')}></Card>
                         </div>
                     }
+                    {Object.keys(gioChartDataEo).length === 0 ? (
+                        <></>
+                    ) : (
+                        <div>
+                            <header className="text-2xl bg-grey text-center text-blue-600 text-center" style={{ marginTop: "30px", marginBottom: "30px" }}>
+                                Andamento Consumo Giornaliero
+                            </header>
+                                <DatePicker
+                                    selected={selectedDateEo}
+                                    onChange={handleDateChange}
+                                    dateFormat="dd/MM/yyyy"
+                                    placeholderText="Seleziona una data"
+                                    maxDate={new Date()} // Imposta la data corrente come massima data selezionabile
+                                    showDisabledMonthNavigation
+                                />
+                                <Line data={gioChartDataEo} height={536} width={1072} options={{
+                                    elements: {
+                                        point: {
+                                            radius: 0 // Imposta il raggio dei punti a 0 per rimuoverli
+                                        }
+                                    }
+                                }} />
+                        </div>
+                    )}
                     {Object.keys(chartDataEo).length === 0 ? (
                         <></>
                     ) : (

@@ -62,6 +62,8 @@ function ApartmentME() {
         apartment(); //richiamo la funzione profilo
         stanze(); //richiamo la funzione stanze
         garage(); //richiamo la funzione garage
+        //SERVE PER ANNULLARE UN WARNING
+        // eslint-disable-next-line 
     },[auth])
     
     //funzione che mi permette di creare la tabella per visualizzare i dati

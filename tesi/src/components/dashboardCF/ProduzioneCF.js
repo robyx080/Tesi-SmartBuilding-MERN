@@ -9,6 +9,8 @@ import { useAuth } from '../auth'; //autorizzazione al componente
 import '../../../node_modules/bootstrap/dist/css/bootstrap.min.css';
 import { utcToZonedTime } from 'date-fns-tz'
 import { formatISO } from 'date-fns';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -19,8 +21,9 @@ import {
     Tooltip,
     Legend,
 } from 'chart.js';
-
-import { Line } from 'react-chartjs-2';
+ // eslint-disable-next-line
+ import Chart from 'chart.js/auto';
+import { Line,Bar } from 'react-chartjs-2';
 
 ChartJS.register(
     CategoryScale,
@@ -50,6 +53,10 @@ function ProduzioneCF() {
     const [chartDataEol, setChartDataEol] = useState({});
     const [noChartEol,setNoChartEol] =useState("")
 
+    const [gioChartProd, setGioChartProd] = useState({});
+    const [selectedDate, setSelectedDate] = useState(null);
+    const [chartVS, setChartVS] = useState({});
+    const [selectedDateVS, setSelectedDateVS] = useState(null);
 
     useEffect(()=>{
         const date = new Date(); // crea una nuova data
@@ -132,10 +139,188 @@ function ProduzioneCF() {
                     });
                 }
             }
+            if(email==="reale@gmail.com"){
+                var chartConsumoResponse = await axios.post('http://localhost:5000/chartConTotReale', {email,ora})
+                var chartProduzioneResponse = await axios.post('http://localhost:5000/chartProTotReale', {email,ora})
+                var conTotConsumi = chartConsumoResponse.data[0][0]
+                var conTv = chartConsumoResponse.data[0][1]
+                var conFr = chartConsumoResponse.data[0][2]
+                var conPh = chartConsumoResponse.data[0][3]
+                var conPc = chartConsumoResponse.data[0][4]
+                var conTotLabels = chartConsumoResponse.data[1].filter((_, index) => index % 60 === 0)
+                var produzione=[]
+                for(var i=0;i<chartProduzioneResponse.data[0].length;i++){
+                    var sol=chartProduzioneResponse.data[0][i]
+                    var eol=chartProduzioneResponse.data[1][i]
+                    produzione.push(sol+eol)
+                }
+
+                setGioChartProd({
+                    type: 'bar',
+                    labels: chartProduzioneResponse.data[2],
+                    datasets: [{
+                        label: 'Solare',
+                        data: chartProduzioneResponse.data[0],
+                        backgroundColor: 'rgba(0, 255, 0, 0.5)', stack: 'Stack 0',
+                    },
+                    {
+                        label: 'Eolico',
+                        data: chartProduzioneResponse.data[1],
+                        backgroundColor: 'rgba(255, 0, 0, 0.5)', stack: 'Stack 0',
+                    }],
+                    options: {
+                        responsive: true
+                    }
+                })
+
+                setChartVS({
+                    labels: conTotLabels,
+                    datasets: [{
+                        type: 'bar',
+                        label: conTv[0],
+                        data: conTv.slice(1).filter((_, index) => index % 59 === 0),
+                        backgroundColor: 'rgba(0, 255, 0, 0.5)', stack: 'Stack 0',
+                    },
+                    {   
+                        type: 'bar',
+                        label: conFr[0],
+                        data: conFr.slice(1).filter((_, index) => index % 59 === 0),
+                        backgroundColor: 'rgba(255, 0, 0, 0.5)', stack: 'Stack 0',
+                    },
+                    {   
+                        type: 'bar',
+                        label: conPh[0],
+                        data: conPh.slice(1).filter((_, index) => index % 59 === 0),
+                        backgroundColor: 'rgba(255, 255, 0, 0.5)', stack: 'Stack 0',
+                    },
+                    {
+                        type: 'bar',
+                        label: conPc[0],
+                        data: conPc.slice(1).filter((_, index) => index % 59 === 0),
+                        backgroundColor: 'rgba(0, 192, 192, 0.5)', stack: 'Stack 0',
+                    },
+                    {   
+                        type: 'bar',
+                        label: conTotConsumi[0],
+                        data: conTotConsumi.slice(1).filter((_, index) => index % 59 === 0),
+                        backgroundColor: 'rgba(155, 155, 155, 0.5)', stack: 'Stack 1',
+                    },
+                    {
+                        type: 'line',
+                        label: 'Produzione Solare & Eolica',
+                        data: produzione,
+                        backgroundColor: 'rgb(255, 165, 0)',   //colore dell'area sottostante alla curva  (0.3 è l'opacità)
+                        borderColor:'rgb(255, 165, 0)',
+                        fill: false,
+                        tension: 0.1,
+                    }],
+                    options: {
+                        responsive: true
+                    }
+                })
+            }
         }
         ConPro();
         chart()
     },[auth])
+
+    const handleDateChange = (date) => {
+        const change = async (date) => {
+            const email=auth.email;
+            var chartProduzioneResponse = await axios.post('http://localhost:5000/changeChartProTotReale', {email,date});            
+            
+            setSelectedDate(date)
+            setGioChartProd({
+                    type: 'bar',
+                    labels: chartProduzioneResponse.data[2],
+                    datasets: [{
+                        label: 'Solare',
+                        data: chartProduzioneResponse.data[0],
+                        backgroundColor: 'rgba(0, 255, 0, 0.5)', stack: 'Stack 0',
+                    },
+                    {
+                        label: 'Eolico',
+                        data: chartProduzioneResponse.data[1],
+                        backgroundColor: 'rgba(255, 0, 0, 0.5)', stack: 'Stack 0',
+                    }],
+                    options: {
+                        responsive: true
+                    }
+                })
+        }
+        change(date)
+      };
+
+    const handleDateChangeVS = (date) => {
+        const change = async (date) => {
+            const email=auth.email;
+            var chartConsumoResponse = await axios.post('http://localhost:5000/changeChartConTotReale', {email,date});            
+            var chartProduzioneResponse = await axios.post('http://localhost:5000/changeChartProTotReale', {email,date});            
+
+            var conTotConsumi = chartConsumoResponse.data[0][0]
+            var conTv = chartConsumoResponse.data[0][1]
+            var conFr = chartConsumoResponse.data[0][2]
+            var conPh = chartConsumoResponse.data[0][3]
+            var conPc = chartConsumoResponse.data[0][4]
+
+            var conTotLabels = chartConsumoResponse.data[1].filter((_, index) => index % 60 === 0)
+            //console.log(consumi)
+            var produzione=[]
+            //console.log(chartConsumoResponse[0])
+            for(var i=0;i<chartProduzioneResponse.data[0].length;i++){
+                var sol=chartProduzioneResponse.data[0][i]
+                var eol=chartProduzioneResponse.data[1][i]
+                produzione.push(sol+eol)
+            }
+
+            setSelectedDateVS(date)
+            setChartVS({
+                labels: conTotLabels,
+                datasets: [{
+                    type: 'bar',
+                    label: conTv[0],
+                    data: conTv.slice(1).filter((_, index) => index % 59 === 0),
+                    backgroundColor: 'rgba(0, 255, 0, 0.5)', stack: 'Stack 0',
+                },
+                {   
+                    type: 'bar',
+                    label: conFr[0],
+                    data: conFr.slice(1).filter((_, index) => index % 59 === 0),
+                    backgroundColor: 'rgba(255, 0, 0, 0.5)', stack: 'Stack 0',
+                },
+                {   
+                    type: 'bar',
+                    label: conPh[0],
+                    data: conPh.slice(1).filter((_, index) => index % 59 === 0),
+                    backgroundColor: 'rgba(255, 255, 0, 0.5)', stack: 'Stack 0',
+                },
+                {
+                    type: 'bar',
+                    label: conPc[0],
+                    data: conPc.slice(1).filter((_, index) => index % 59 === 0),
+                    backgroundColor: 'rgba(0, 192, 192, 0.5)', stack: 'Stack 0',
+                },
+                {   
+                    type: 'bar',
+                    label: conTotConsumi[0],
+                    data: conTotConsumi.slice(1).filter((_, index) => index % 59 === 0),
+                    backgroundColor: 'rgba(155, 155, 155, 0.5)', stack: 'Stack 1',
+                },
+                {
+                    type: 'line',
+                    label: 'Produzione Solare & Eolica',
+                    data: produzione,
+                    backgroundColor: 'rgb(255, 165, 0)',   //colore dell'area sottostante alla curva  (0.3 è l'opacità)
+                    fill: false,
+                    tension: 0.1,
+                }],
+                options: {
+                    responsive: true
+                }
+            })
+        }
+        change(date)
+      };
 
     //ui componente
     return(
@@ -198,6 +383,42 @@ function ProduzioneCF() {
                         </>
                     )}
                 </div>
+                {Object.keys(gioChartProd).length === 0 ? (
+                    <></>
+                ) : (
+                    <div>
+                        <header className="text-2xl bg-grey text-center text-blue-600 text-center" style={{ marginTop: "30px", marginBottom: "30px" }}>
+                            Andamento Produzione Giornaliera
+                        </header>
+                        <DatePicker
+                            selected={selectedDate}
+                            onChange={handleDateChange}
+                            dateFormat="dd/MM/yyyy"
+                            placeholderText="Seleziona una data"
+                            maxDate={new Date()} // Imposta la data corrente come massima data selezionabile
+                            showDisabledMonthNavigation
+                        />
+                        <Bar data={gioChartProd} height={536} width={1072} />
+                    </div>
+                )}
+                {Object.keys(chartVS).length === 0 ? (
+                    <></>
+                ) : (
+                    <div>
+                        <header className="text-2xl bg-grey text-center text-blue-600 text-center" style={{ marginTop: "30px", marginBottom: "30px" }}>
+                            Consumo & Produzione
+                        </header>
+                        <DatePicker
+                            selected={selectedDateVS}
+                            onChange={handleDateChangeVS}
+                            dateFormat="dd/MM/yyyy"
+                            placeholderText="Seleziona una data"
+                            maxDate={new Date()} // Imposta la data corrente come massima data selezionabile
+                            showDisabledMonthNavigation
+                        />
+                        <Line data={chartVS} height={536} width={1072} />
+                    </div>
+                )}
             </div>
         </div>
     )

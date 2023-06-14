@@ -263,6 +263,8 @@ function AddDispositivoCF() {
         }
 
         selectStanze(); //richiamo la funzione selectStanze
+        //SERVE PER ANNULLARE UN WARNING
+        // eslint-disable-next-line 
     },[auth])
 
     //funzione che ci permette di mostrare un determinato div all'interno della dashboard

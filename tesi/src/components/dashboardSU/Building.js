@@ -28,6 +28,8 @@ function Building() {
             }
           }
         edifici(); //richiamo la funzione profilo
+        //SERVE PER ANNULLARE UN WARNING
+        // eslint-disable-next-line 
     },[auth])
     
     //funzione che mi permette di creare la tabella per visualizzare i dati

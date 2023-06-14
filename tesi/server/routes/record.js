@@ -30,7 +30,6 @@ recordRoutes.route("/login").post(async function (req, res) {
     }
 });
 
-
 //Definisco una nuova route per la gestione della richiesta HTTP POST alla route /signupCC
 recordRoutes.route("/signupCC").post(async function (req, res) {
     // Otteniamo la connessione al database
@@ -1789,11 +1788,12 @@ recordRoutes.route("/ConProCFreale").post(async function(req, res) {
 
   // Otteniamo la connessione al database
   let db_connect = dbo.getDb();
+  let db_connect2 = dbo.getDbAtlas();
 
   // Estraggo i dati della richiesta HTTP dal corpo della richiesta 
   email = req.body.email;
   ora = new Date(req.body.ora);
-  ora2 = new Date(ora.getTime() - (10 * 60 * 1000)); //restituisco la data - 10 minuti
+  ora2 = new Date(ora.getTime() - (60 * 60 * 1000)); //restituisco la data - 60 minuti
   // Prendi dal db le informazioni sulle stanze di una determinato appartamento di una determinata famiglia
   try {
       var records = await db_connect.collection("persona").find({ email }).toArray();  //query su persona
@@ -1836,7 +1836,7 @@ recordRoutes.route("/ConProCFreale").post(async function(req, res) {
       }
       
       //prendo impianto solare e eolico e query per produzione istantaneo
-      var deviceSol = await db_connect.collection("impiantoSolare").find({idAppartamento}).toArray(); //query su edificio 
+      var deviceSol = await db_connect.collection("impiantoSolare").find({idAppartamento}).toArray(); //query su edificio
       if(deviceSol.length>0){
         idSol=deviceSol[0].id;
         var produzione = await db_connect.collection("produzione").find({$and:[ {orario : {$lte: ora}},{ orario: { $gt: ora2 } }, {idDispositivo:idSol},{idTipoHardware:2}] }).sort({orario:-1}).limit(1).toArray();
@@ -1859,7 +1859,7 @@ recordRoutes.route("/ConProCFreale").post(async function(req, res) {
         prodEol="nessun dispositivo collegato"
       
     if (elettr.length > 0 || sens.length > 0 || deviceW.length > 0) {
-        consumo= await db_connect.collection("consumoReale").find({}).sort({orario:-1}).limit(1).toArray();
+        consumo= await db_connect2.collection("consumoReale").find({}).sort({orario:-1}).limit(1).toArray();
         totConsumo=consumo[0].consumo
     } else {
       totConsumo = "nessun dispositivo collegato"
@@ -2046,7 +2046,7 @@ recordRoutes.route("/statConCF").post(async function(req, res) {
 recordRoutes.route("/statConCFreale").post(async function (req, res) {
 
   // Otteniamo la connessione al database
-  let db_connect = dbo.getDb();
+  let db_connect = dbo.getDbAtlas();
 
   // Estraggo i dati della richiesta HTTP dal corpo della richiesta 
   email = req.body.email;
@@ -2227,7 +2227,7 @@ recordRoutes.route("/chartConCF").post(async function(req, res) {
 recordRoutes.route("/chartConCFreale").post(async function (req, res) {
 
   // Otteniamo la connessione al database
-  let db_connect = dbo.getDb();
+  let db_connect = dbo.getDbAtlas();
 
   // Estraggo i dati della richiesta HTTP dal corpo della richiesta 
   email = req.body.email;
@@ -2281,6 +2281,275 @@ recordRoutes.route("/chartConCFreale").post(async function (req, res) {
   }
 });
 
+
+//Definisco una nuova route per la gestione della richiesta HTTP POST alla route /chartConTotReale
+recordRoutes.route("/chartConTotReale").post(async function (req, res) {
+
+  // Otteniamo la connessione al database
+  let db_connect = dbo.getDbAtlas();
+  let db_connect1 = dbo.getDb();
+
+
+  // Estraggo i dati della richiesta HTTP dal corpo della richiesta 
+  email = req.body.email;
+  ora = new Date(req.body.ora);
+  ora2 = new Date(ora.getTime())
+  ora2.setHours(0,0,0,0)
+ 
+
+  // Prendi dal db le informazioni sulle stanze di una determinato appartamento di una determinata famiglia
+  try {
+
+    var arrConsumo = new Array()
+    var arrDate = new Array()
+    var arr = new Array()
+
+    //prendo i consumi tot
+    
+    var ar = new Array()
+    var consumoTot = await db_connect.collection("consumoReale").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gte: ora2 } }] }).toArray();
+    ar.push("Consumo Totale")
+    for (var j = 0; j < consumoTot.length; j++) {
+      ar.push(consumoTot[j].consumo)
+      arrDate.push(consumoTot[j].orario.toLocaleString())
+    }
+    arrConsumo.push(ar)
+
+    //preno i consumi delle singole prese
+    var records = await db_connect1.collection("persona").find({ email }).toArray();  //query su persona
+    var idFamiglia = records[0].idFamiglia;  //mi prendo l'email dell'azienda
+    var records2 = await db_connect1.collection("appartamento").find({ idFamiglia }).toArray();  //query su azienda
+    var idAppartamento = records2[0].id;  //mi prendo la città dell'azienda
+    var stanze = await db_connect1.collection("stanza").find({ idAppartamento }).toArray(); //query su edificio     
+    var elettr = new Array()
+
+    //prendo elettrodomestici 
+    for (var i = 0; i < stanze.length; i++) {
+      idStanza = stanze[i].id;
+      var deviceE = await db_connect1.collection("elettrodomestico").find({ idStanza }).toArray(); //query su edificio 
+      for (var j = 0; j < deviceE.length; j++) {
+        var idDispositivo = deviceE[j].id
+        var nome=deviceE[j].nome
+        elettr.push([idDispositivo,nome])
+      }
+    }
+
+    for(var i=0; i < elettr.length; i++){
+      var idDispositivo = elettr[i][0]
+      var nome = elettr[i][1]
+      var consumoPresa = await db_connect.collection("consumoPrese").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gte: ora2 } }, {idDispositivo:idDispositivo}] }).toArray();
+      var ar = new Array()
+      ar.push(nome)
+      for (var j = 0; j < consumoPresa.length; j++) {
+        ar.push(consumoPresa[j].consumo)
+      }
+      arrConsumo.push(ar)
+    }
+
+    arr.push(arrConsumo,arrDate)
+    
+    res.json(arr);
+  } catch (e) {
+    console.log("An error occurred pulling the records. " + e);
+    res.send('error query')
+  }
+});
+
+
+//Definisco una nuova route per la gestione della richiesta HTTP POST alla route /changeChartConTotReale
+recordRoutes.route("/changeChartConTotReale").post(async function (req, res) {
+
+  // Otteniamo la connessione al database
+  let db_connect = dbo.getDbAtlas();
+  let db_connect1 = dbo.getDb();
+
+
+  // Estraggo i dati della richiesta HTTP dal corpo della richiesta 
+  email = req.body.email;
+  var today = new Date()
+  var ora = new Date(req.body.date) 
+  var oraSF = new Date(ora.getTime() + (2 * 60 * 60 * 1000)) //tolgo il fuso
+  var ora2 = new Date(ora.getTime() + (24 * 60 * 60 * 1000)); //restituisco la data + 24 ore
+ 
+
+  // Prendi dal db le informazioni sulle stanze di una determinato appartamento di una determinata famiglia
+  try {
+
+    var arrConsumo = new Array()
+    var arrDate = new Array()
+    var arr = new Array()
+
+    //prendo i consumi tot
+    if(today.toISOString().split('T')[0] != oraSF.toISOString().split('T')[0]){
+      today=ora2
+    }
+    var ar = new Array()
+    var consumoTot = await db_connect.collection("consumoReale").find({ $and: [{ orario: { $lte: today } }, { orario: { $gte: ora } }] }).toArray();
+    ar.push("Consumo Totale")
+    for (var j = 0; j < consumoTot.length; j++) {
+      ar.push(consumoTot[j].consumo)
+      arrDate.push(consumoTot[j].orario.toLocaleString())
+    }
+    arrConsumo.push(ar)
+
+    //preno i consumi delle singole prese
+    var records = await db_connect1.collection("persona").find({ email }).toArray();  //query su persona
+    var idFamiglia = records[0].idFamiglia;  //mi prendo l'email dell'azienda
+    var records2 = await db_connect1.collection("appartamento").find({ idFamiglia }).toArray();  //query su azienda
+    var idAppartamento = records2[0].id;  //mi prendo la città dell'azienda
+    var stanze = await db_connect1.collection("stanza").find({ idAppartamento }).toArray(); //query su edificio     
+    var elettr = new Array()
+
+    //prendo elettrodomestici 
+    for (var i = 0; i < stanze.length; i++) {
+      idStanza = stanze[i].id;
+      var deviceE = await db_connect1.collection("elettrodomestico").find({ idStanza }).toArray(); //query su edificio 
+      for (var j = 0; j < deviceE.length; j++) {
+        var idDispositivo = deviceE[j].id
+        var nome=deviceE[j].nome
+        elettr.push([idDispositivo,nome])
+      }
+    }
+
+    for(var i=0; i < elettr.length; i++){
+      var idDispositivo = elettr[i][0]
+      var nome = elettr[i][1]
+      var consumoPresa = await db_connect.collection("consumoPrese").find({ $and: [{ orario: { $lte: today } }, { orario: { $gte: ora } }, {idDispositivo:idDispositivo}] }).toArray();
+      var ar = new Array()
+      ar.push(nome)
+      for (var j = 0; j < consumoPresa.length; j++) {
+        ar.push(consumoPresa[j].consumo)
+      }
+      arrConsumo.push(ar)
+    }
+
+    arr.push(arrConsumo,arrDate)
+    
+    res.json(arr);
+  } catch (e) {
+    console.log("An error occurred pulling the records. " + e);
+    res.send('error query')
+  }
+});
+
+
+//Definisco una nuova route per la gestione della richiesta HTTP POST alla route /chartConTotReale
+recordRoutes.route("/chartProTotReale").post(async function (req, res) {
+
+  // Otteniamo la connessione al database
+  //let db_connect = dbo.getDbAtlas();
+  let db_connect = dbo.getDb();
+
+
+  // Estraggo i dati della richiesta HTTP dal corpo della richiesta 
+  email = req.body.email;
+  ora = new Date(req.body.ora);
+  ora2 = new Date(ora.getTime())
+  ora2.setHours(0,0,0,0)
+ 
+
+  // Prendi dal db le informazioni sulle stanze di una determinato appartamento di una determinata famiglia
+  try {
+
+    var arrPrSol = new Array()
+    var arrPrEol = new Array()
+    //var arrProd = new Array()
+    var arrDate = new Array()
+    var arr = new Array()
+
+    var records = await db_connect.collection("persona").find({ email }).toArray();  //query su persona
+    var idFamiglia = records[0].idFamiglia;  //mi prendo l'email dell'azienda
+    var records2 = await db_connect.collection("appartamento").find({ idFamiglia }).toArray();  //query su azienda
+    var idAppartamento = records2[0].id;  //mi prendo la città dell'azienda
+    var sol = await db_connect.collection("impiantoSolare").find({ idAppartamento }).toArray();
+    var idSol = sol[0].id;
+    var eol = await db_connect.collection("impiantoEolico").find({ idAppartamento }).toArray();
+    var idEol = eol[0].id
+
+    var produzioneSol = await db_connect.collection("produzione").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gte: ora2 } }, {idDispositivo:idSol},{idTipoHardware:2}] }).toArray();
+    var produzioneEol = await db_connect.collection("produzione").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gte: ora2 } }, {idDispositivo:idEol},{idTipoHardware:3}] }).toArray();
+
+    //console.log(produzioneSol)
+    for(var i=0;i<produzioneSol.length;i++){
+      arrPrSol.push(produzioneSol[i].produzione)
+      arrDate.push(produzioneSol[i].orario.toLocaleString())
+    }
+    //console.log(produzioneEol)
+
+    for(var i=0;i<produzioneEol.length;i++){
+      arrPrEol.push(produzioneEol[i].produzione)
+    }
+
+    arr.push(arrPrSol,arrPrEol,arrDate)
+    
+    res.json(arr);
+  } catch (e) {
+    console.log("An error occurred pulling the records. " + e);
+    res.send('error query')
+  }
+});
+
+
+//Definisco una nuova route per la gestione della richiesta HTTP POST alla route /changeChartProTotReale
+recordRoutes.route("/changeChartProTotReale").post(async function (req, res) {
+
+  // Otteniamo la connessione al database
+  //let db_connect = dbo.getDbAtlas();
+  let db_connect = dbo.getDb();
+
+
+  // Estraggo i dati della richiesta HTTP dal corpo della richiesta 
+  email = req.body.email;
+  var today = new Date()
+  var ora = new Date(req.body.date) 
+  var oraSF = new Date(ora.getTime() + (2 * 60 * 60 * 1000)) //tolgo il fuso
+  var ora2 = new Date(ora.getTime() + (24 * 60 * 60 * 1000)); //restituisco la data + 24 ore
+ 
+
+  // Prendi dal db le informazioni sulle stanze di una determinato appartamento di una determinata famiglia
+  try {
+
+    var arrPrSol = new Array()
+    var arrPrEol = new Array()
+    //var arrProd = new Array()
+    var arrDate = new Array()
+    var arr = new Array()
+
+    var records = await db_connect.collection("persona").find({ email }).toArray();  //query su persona
+    var idFamiglia = records[0].idFamiglia;  //mi prendo l'email dell'azienda
+    var records2 = await db_connect.collection("appartamento").find({ idFamiglia }).toArray();  //query su azienda
+    var idAppartamento = records2[0].id;  //mi prendo la città dell'azienda
+    var sol = await db_connect.collection("impiantoSolare").find({ idAppartamento }).toArray();
+    var idSol = sol[0].id;
+    var eol = await db_connect.collection("impiantoEolico").find({ idAppartamento }).toArray();
+    var idEol = eol[0].id
+
+
+    if(today.toISOString().split('T')[0] != oraSF.toISOString().split('T')[0]){
+      today=ora2
+    }
+    var produzioneSol = await db_connect.collection("produzione").find({ $and: [{ orario: { $lte: today } }, { orario: { $gte: ora } }, {idDispositivo:idSol},{idTipoHardware:2}] }).toArray();
+    var produzioneEol = await db_connect.collection("produzione").find({ $and: [{ orario: { $lte: today } }, { orario: { $gte: ora } }, {idDispositivo:idEol},{idTipoHardware:3}] }).toArray();
+
+    //console.log(produzioneSol)
+    for(var i=0;i<produzioneSol.length;i++){
+      arrPrSol.push(produzioneSol[i].produzione)
+      arrDate.push(produzioneSol[i].orario.toLocaleString())
+    }
+    //console.log(produzioneEol)
+
+    for(var i=0;i<produzioneEol.length;i++){
+      arrPrEol.push(produzioneEol[i].produzione)
+    }
+
+    arr.push(arrPrSol,arrPrEol,arrDate)
+    
+    res.json(arr);
+  } catch (e) {
+    console.log("An error occurred pulling the records. " + e);
+    res.send('error query')
+  }
+});
 
 //Definisco una nuova route per la gestione della richiesta HTTP POST alla route /roomCF
 recordRoutes.route("/chartDevice").post(async function(req, res) {
@@ -2352,6 +2621,8 @@ recordRoutes.route("/chartDeviceReale").post(async function(req, res) {
 
   // Otteniamo la connessione al database
   let db_connect = dbo.getDb();
+  let db_connect1 = dbo.getDbAtlas();
+
   var idDevice=req.body.idDevice
   var tipoHardware=req.body.tipoHardware
   // Estraggo i dati della richiesta HTTP dal corpo della richiesta 
@@ -2376,7 +2647,7 @@ recordRoutes.route("/chartDeviceReale").post(async function(req, res) {
 
         //media giornaliera
         if(tipoHardware===1 || tipoHardware===4 || tipoHardware===5){
-          var consumo = await db_connect.collection("consumoPrese").find({$and:[ {orario : {$lte: ora}},{ orario: { $gt: oraG } }, {idDispositivo:idDevice},{idTipoHardware:tipoHardware}] }).toArray();
+          var consumo = await db_connect1.collection("consumoPrese").find({$and:[ {orario : {$lte: ora}},{ orario: { $gt: oraG } }, {idDispositivo:idDevice},{idTipoHardware:tipoHardware}] }).toArray();
           for(var j=0;j<consumo.length;j++){
             tot=tot+consumo[j].consumo
             numC=numC+1
@@ -2407,6 +2678,117 @@ recordRoutes.route("/chartDeviceReale").post(async function(req, res) {
       res.send('error query')
   }
 });
+
+
+//Definisco una nuova route per la gestione della richiesta HTTP POST alla route /gioChartDeviceReale
+recordRoutes.route("/gioChartDeviceReale").post(async function(req, res) {
+
+  // Otteniamo la connessione al database
+  let db_connect = dbo.getDb();
+  let db_connect1 = dbo.getDbAtlas();
+
+  var idDevice=req.body.idDevice
+  var tipoHardware=req.body.tipoHardware
+  // Estraggo i dati della richiesta HTTP dal corpo della richiesta 
+  ora = new Date(req.body.ora);
+  ora2 = new Date(ora.getTime())
+  ora2.setHours(0,0,0,0)
+  
+  oraG = new Date(ora.getTime() - (24 * 60 * 60 * 1000)); //restituisco la data - 24 ore
+ 
+  // Prendi dal db le informazioni sulle stanze di una determinato appartamento di una determinata famiglia
+  try {
+
+    var arrConsumo = new Array()
+    var arrDate = new Array()
+    const arr = new Array()
+
+    //valori giornalieri
+    if (tipoHardware === 1 || tipoHardware === 4 || tipoHardware === 5) {
+      var consumo = await db_connect1.collection("consumoPrese").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gte: ora2 } }, { idDispositivo: idDevice }, { idTipoHardware: tipoHardware }] }).toArray();
+      for (var j = 0; j < consumo.length; j++) {
+        arrConsumo.push(consumo[j].consumo)
+        arrDate.push(consumo[j].orario.toLocaleString())
+      }
+      arr.push(arrConsumo, arrDate)
+    } else {
+      var produzione = await db_connect.collection("produzione").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gte: ora2 } }, { idDispositivo: idDevice }, { idTipoHardware: tipoHardware }] }).toArray();
+      for (var j = 0; j < produzione.length; j++) {
+        arrConsumo.push(produzione[j].produzione)
+        arrDate.push(produzione[j].orario.toLocaleString())
+      }
+      arr.push(arrConsumo, arrDate)
+    }
+
+    res.json(arr);
+  } catch (e) {
+    console.log("An error occurred pulling the records. " + e);
+    res.send('error query')
+  }
+});
+
+//Definisco una nuova route per la gestione della richiesta HTTP POST alla route /changeChart
+recordRoutes.route("/changeChart").post(async function(req, res) {
+
+  // Otteniamo la connessione al database
+  let db_connect = dbo.getDb();
+  let db_connect1 = dbo.getDbAtlas();
+
+  var idDevice=req.body.idDeviceGio
+  var tipoHardware=req.body.tipoHardwareGio
+  var today = new Date()
+  var ora = new Date(req.body.date) 
+  var oraSF = new Date(ora.getTime() + (2 * 60 * 60 * 1000)) //tolgo il fuso
+  var ora2 = new Date(ora.getTime() + (24 * 60 * 60 * 1000)); //restituisco la data + 24 ore
+  
+  try {
+    var arrConsumo = new Array()
+    var arrDate = new Array()
+    const arr = new Array()
+
+    if(today.toISOString().split('T')[0] === oraSF.toISOString().split('T')[0]){
+      //valori giornalieri
+      if (tipoHardware === 1 || tipoHardware === 4 || tipoHardware === 5) {
+        var consumo = await db_connect1.collection("consumoPrese").find({ $and: [{ orario: { $lte: today } }, { orario: { $gte: ora } }, { idDispositivo: idDevice }, { idTipoHardware: tipoHardware }] }).toArray();
+        for (var j = 0; j < consumo.length; j++) {
+          arrConsumo.push(consumo[j].consumo)
+          arrDate.push(consumo[j].orario.toLocaleString())
+        }
+        arr.push(arrConsumo, arrDate)
+      } else {
+        var produzione = await db_connect.collection("produzione").find({ $and: [{ orario: { $lte: today } }, { orario: { $gte: ora } }, { idDispositivo: idDevice }, { idTipoHardware: tipoHardware }] }).toArray();
+        for (var j = 0; j < produzione.length; j++) {
+          arrConsumo.push(produzione[j].produzione)
+          arrDate.push(produzione[j].orario.toLocaleString())
+        }
+        arr.push(arrConsumo, arrDate)
+      }
+
+    }else{
+      if (tipoHardware === 1 || tipoHardware === 4 || tipoHardware === 5) {
+        var consumo = await db_connect1.collection("consumoPrese").find({ $and: [{ orario: { $lt: ora2 } }, { orario: { $gte: ora } }, { idDispositivo: idDevice }, { idTipoHardware: tipoHardware }] }).toArray();
+        for (var j = 0; j < consumo.length; j++) {
+          arrConsumo.push(consumo[j].consumo)
+          arrDate.push(consumo[j].orario.toLocaleString())
+        }
+        arr.push(arrConsumo, arrDate)
+      } else {
+        var produzione = await db_connect.collection("produzione").find({ $and: [{ orario: { $lt: ora2 } }, { orario: { $gte: ora } }, { idDispositivo: idDevice }, { idTipoHardware: tipoHardware }] }).toArray();
+        for (var j = 0; j < produzione.length; j++) {
+          arrConsumo.push(produzione[j].produzione)
+          arrDate.push(produzione[j].orario.toLocaleString())
+        }
+        arr.push(arrConsumo, arrDate)
+      }
+    }
+
+    res.json(arr);
+  } catch (e){
+    console.log("An error occurred pulling the records. " + e);
+    res.send('error query')
+  }
+});
+
 
 //Definisco una nuova route per la gestione della richiesta HTTP POST alla route /roomCF
 recordRoutes.route("/statProCF").post(async function(req, res) {
@@ -2848,12 +3230,13 @@ recordRoutes.route("/showConsumoDeviceReali").post(async function(req, res) {
 
   // Otteniamo la connessione al database
   let db_connect = dbo.getDb();
+  let db_connect1 = dbo.getDbAtlas();
 
   // Estraggo i dati della richiesta HTTP dal corpo della richiesta 
   idDevice = req.body.idDevice;
   tipoHardware = req.body.tipoHardware;
   ora = new Date(req.body.ora);
-  ora2 = new Date(ora.getTime() - (10 * 60 * 1000)); //restituisco la data - 10 minuti
+  ora2 = new Date(ora.getTime() - (60 * 60 * 1000)); //restituisco la data - 60 minuti (per impiato solare)
   oraG = new Date(ora.getTime() - (24 * 60 * 60 * 1000)); //restituisco la data - 24 ore
   oraS = new Date(ora.getTime() - (7 * 24 * 60 * 60 * 1000)) //restituisco la data - 1 settimana
   //restituisco la data - 1 mese
@@ -2872,7 +3255,7 @@ recordRoutes.route("/showConsumoDeviceReali").post(async function(req, res) {
     if(tipoHardware===1 || tipoHardware===4 || tipoHardware===5 ){
 
       //var consumo = await db_connect.collection("consumo").find({ $and: [{ orario: { $lte: ora } }, { idDispositivo: idDevice }, { idTipoHardware: tipoHardware }] }).sort({ orario: -1 }).limit(1).toArray();
-      var consumo = await db_connect.collection("consumoPrese").find({ $and: [ { idDispositivo: idDevice }, { idTipoHardware: tipoHardware }] }).sort({ orario: -1 }).limit(1).toArray();
+      var consumo = await db_connect1.collection("consumoPrese").find({ $and: [ { idDispositivo: idDevice }, { idTipoHardware: tipoHardware }] }).sort({ orario: -1 }).limit(1).toArray();
       if(consumo.length<=0){
         vaIst = "ancora nessun consumo"
         mediaG = "ancora nessun consumo"
@@ -2882,19 +3265,19 @@ recordRoutes.route("/showConsumoDeviceReali").post(async function(req, res) {
         vaIst = consumo[0].consumo //consumo istantaneo
         
         //consumo giornaliero
-        var consumo = await db_connect.collection("consumoPrese").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gt: oraG } }, { idDispositivo: idDevice }, { idTipoHardware: tipoHardware }] }).toArray();
+        var consumo = await db_connect1.collection("consumoPrese").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gt: oraG } }, { idDispositivo: idDevice }, { idTipoHardware: tipoHardware }] }).toArray();
         for (var j = 0; j < consumo.length; j++) {
           mediaGd = mediaGd + consumo[j].consumo
           numMediaG = numMediaG + 1
         }
         //consumo settimanale
-        var consumo = await db_connect.collection("consumoPrese").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gt: oraS } }, { idDispositivo: idDevice }, { idTipoHardware: tipoHardware  }] }).toArray();
+        var consumo = await db_connect1.collection("consumoPrese").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gt: oraS } }, { idDispositivo: idDevice }, { idTipoHardware: tipoHardware  }] }).toArray();
         for (var j = 0; j < consumo.length; j++) {
           mediaSd = mediaSd + consumo[j].consumo
           numMediaS = numMediaS + 1
         }
         //consumo mensile
-        var consumo = await db_connect.collection("consumoPrese").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gt: oraM } }, { idDispositivo: idDevice }, { idTipoHardware: tipoHardware  }] }).toArray();
+        var consumo = await db_connect1.collection("consumoPrese").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gt: oraM } }, { idDispositivo: idDevice }, { idTipoHardware: tipoHardware  }] }).toArray();
         for (var j = 0; j < consumo.length; j++) {
           mediaMd = mediaMd + consumo[j].consumo
           numMediaM = numMediaM + 1
@@ -3091,6 +3474,7 @@ recordRoutes.route("/showConsumoStanzaReale").post(async function (req, res) {
 
   // Otteniamo la connessione al database
   let db_connect = dbo.getDb();
+  let db_connect1 = dbo.getDbAtlas();
 
   // Estraggo i dati della richiesta HTTP dal corpo della richiesta 
   idStanza = req.body.idStanza;
@@ -3135,7 +3519,7 @@ recordRoutes.route("/showConsumoStanzaReale").post(async function (req, res) {
       
       //consumo istantaneo
       for (var i = 0; i < elettr.length; i++) {
-        var consumoEl = await db_connect.collection("consumoPrese").find({ $and: [{ idDispositivo: elettr[i] }, { idTipoHardware: 1 }] }).sort({ orario: -1 }).limit(1).toArray();
+        var consumoEl = await db_connect1.collection("consumoPrese").find({ $and: [{ idDispositivo: elettr[i] }, { idTipoHardware: 1 }] }).sort({ orario: -1 }).limit(1).toArray();
         if (consumoEl.length > 0) {
           totConsumo = totConsumo + consumoEl[0].consumo
           numConsEl = numConsEl + 1
@@ -3151,7 +3535,7 @@ recordRoutes.route("/showConsumoStanzaReale").post(async function (req, res) {
 
       //media giornaliera
       for (var i = 0; i < elettr.length; i++) {
-        var consumoEl = await db_connect.collection("consumoPrese").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gt: oraG } }, { idDispositivo: elettr[i] }, { idTipoHardware: 1 }] }).toArray();
+        var consumoEl = await db_connect1.collection("consumoPrese").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gt: oraG } }, { idDispositivo: elettr[i] }, { idTipoHardware: 1 }] }).toArray();
         for (var j = 0;j<consumoEl.length;j++) {
           mediaGel = mediaGel + consumoEl[j].consumo
           numMediaG = numMediaG + 1
@@ -3167,7 +3551,7 @@ recordRoutes.route("/showConsumoStanzaReale").post(async function (req, res) {
 
       //media settimanale
       for (var i = 0; i < elettr.length; i++) {
-        var consumoEl = await db_connect.collection("consumoPrese").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gt: oraS } }, { idDispositivo: elettr[i] }, { idTipoHardware: 1 }] }).toArray();
+        var consumoEl = await db_connect1.collection("consumoPrese").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gt: oraS } }, { idDispositivo: elettr[i] }, { idTipoHardware: 1 }] }).toArray();
         for (var j = 0;j<consumoEl.length;j++) {
           mediaSel = mediaSel + consumoEl[j].consumo
           numMediaS = numMediaS + 1
@@ -3183,7 +3567,7 @@ recordRoutes.route("/showConsumoStanzaReale").post(async function (req, res) {
 
       //media mensile
       for (var i = 0; i < elettr.length; i++) {
-        var consumoEl = await db_connect.collection("consumoPrese").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gt: oraM } }, { idDispositivo: elettr[i] }, { idTipoHardware: 1 }] }).toArray();
+        var consumoEl = await db_connect1.collection("consumoPrese").find({ $and: [{ orario: { $lte: ora } }, { orario: { $gt: oraM } }, { idDispositivo: elettr[i] }, { idTipoHardware: 1 }] }).toArray();
         for (var j = 0;j<consumoEl.length;j++) {
           mediaMel = mediaMel + consumoEl[j].consumo
           numMediaM = numMediaM + 1
