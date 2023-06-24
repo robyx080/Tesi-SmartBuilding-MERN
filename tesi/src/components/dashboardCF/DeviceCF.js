@@ -245,7 +245,9 @@ function DeviceCF() {
             } 
           }
         device(); //richiamo la funzione device
-    },[auth,createTable])
+
+        // eslint-disable-next-line
+    },[])
     
     const eliminaDevice = async (idDevice,tipoHardware, row) => {
         try {
@@ -307,6 +309,8 @@ function DeviceCF() {
                 response = await axios.post('http://localhost:5000/showConsumoDeviceReali', {idDevice,tipoHardware,ora});
                 chartResponse = await axios.post('http://localhost:5000/chartDeviceReale', {idDevice,tipoHardware,ora});
                 gioChartResponse = await axios.post('http://localhost:5000/gioChartDeviceReale', {idDevice,tipoHardware,ora});
+                gioLabels = gioChartResponse.data[1]
+                gioConsumi = gioChartResponse.data[0]
             }else{
                 response = await axios.post('http://localhost:5000/showConsumoDevice', {idDevice,tipoHardware,ora});
                 chartResponse = await axios.post('http://localhost:5000/chartDevice', {idDevice,tipoHardware,ora});
@@ -315,8 +319,7 @@ function DeviceCF() {
             labels = chartResponse.data[1].reverse()
             consumi = chartResponse.data[0].reverse()
 
-            gioLabels = gioChartResponse.data[1]
-            gioConsumi = gioChartResponse.data[0]
+            
 
             //per mettere meno valori
             //gioLabels = gioChartResponse.data[1].filter((_, index) => index % 5 === 0)
@@ -341,24 +344,26 @@ function DeviceCF() {
                             responsive: true
                         }
                     });
-                    setTipoHardwareGio(tipoHardware)
-                    setIdDeviceGio(idDevice)
-                    setGioChartDataE({
-                        labels: gioLabels,
-                        datasets: [
-                            {
-                                label: 'Consumi',
-                                data: gioConsumi,
-                                backgroundColor: 'rgb(204, 255, 153, 0.3)',   //colore dell'area sottostante alla curva  (0.3 è l'opacità)
-                                borderColor: 'rgb(110, 251, 0)',
-                                fill: false,
-                                tension: 0.1
+                    if(auth.email==="reale@gmail.com"){
+                        setTipoHardwareGio(tipoHardware)
+                        setIdDeviceGio(idDevice)
+                        setGioChartDataE({
+                            labels: gioLabels,
+                            datasets: [
+                                {
+                                    label: 'Consumi',
+                                    data: gioConsumi,
+                                    backgroundColor: 'rgb(204, 255, 153, 0.3)',   //colore dell'area sottostante alla curva  (0.3 è l'opacità)
+                                    borderColor: 'rgb(110, 251, 0)',
+                                    fill: false,
+                                    tension: 0.1
+                                }
+                            ],
+                            options: {
+                                responsive: true,
                             }
-                        ],
-                        options: {
-                            responsive: true,
-                        }
-                    })
+                        })
+                    }
                     break;
                 case 4:
                     setChartDataSe({
@@ -395,24 +400,26 @@ function DeviceCF() {
                             responsive: true
                         }
                     });
-                    setTipoHardwareGio(tipoHardware)
-                    setIdDeviceGio(idDevice)
-                    setGioChartDataSo({
-                        labels: gioLabels,
-                        datasets: [
-                            {
-                                label: 'Produzione',
-                                data: gioConsumi,
-                                backgroundColor: 'rgb(204, 255, 153, 0.3)',   //colore dell'area sottostante alla curva  (0.3 è l'opacità)
-                                borderColor: 'rgb(110, 251, 0)',
-                                fill: false,
-                                tension: 0.1
+                    if(auth.email==="reale@gmail.com"){
+                        setTipoHardwareGio(tipoHardware)
+                        setIdDeviceGio(idDevice)
+                        setGioChartDataSo({
+                            labels: gioLabels,
+                            datasets: [
+                                {
+                                    label: 'Produzione',
+                                    data: gioConsumi,
+                                    backgroundColor: 'rgb(204, 255, 153, 0.3)',   //colore dell'area sottostante alla curva  (0.3 è l'opacità)
+                                    borderColor: 'rgb(110, 251, 0)',
+                                    fill: false,
+                                    tension: 0.1
+                                }
+                            ],
+                            options: {
+                                responsive: true,
                             }
-                        ],
-                        options: {
-                            responsive: true,
-                        }
-                    })
+                        })
+                    }
                     break;
                 case 3:
                     setChartDataEo({
@@ -431,24 +438,26 @@ function DeviceCF() {
                             responsive: true
                         }
                     });
-                    setTipoHardwareGio(tipoHardware)
-                    setIdDeviceGio(idDevice)
-                    setGioChartDataEo({
-                        labels: gioLabels,
-                        datasets: [
-                            {
-                                label: 'Produzione',
-                                data: gioConsumi,
-                                backgroundColor: 'rgb(204, 255, 153, 0.3)',   //colore dell'area sottostante alla curva  (0.3 è l'opacità)
-                                borderColor: 'rgb(110, 251, 0)',
-                                fill: false,
-                                tension: 0.1
+                    if(auth.email==="reale@gmail.com"){
+                        setTipoHardwareGio(tipoHardware)
+                        setIdDeviceGio(idDevice)
+                        setGioChartDataEo({
+                            labels: gioLabels,
+                            datasets: [
+                                {
+                                    label: 'Produzione',
+                                    data: gioConsumi,
+                                    backgroundColor: 'rgb(204, 255, 153, 0.3)',   //colore dell'area sottostante alla curva  (0.3 è l'opacità)
+                                    borderColor: 'rgb(110, 251, 0)',
+                                    fill: false,
+                                    tension: 0.1
+                                }
+                            ],
+                            options: {
+                                responsive: true,
                             }
-                        ],
-                        options: {
-                            responsive: true,
-                        }
-                    })
+                        })
+                    }
                     break;
                 case 5:
                     setChartDataW({
@@ -716,7 +725,7 @@ function DeviceCF() {
                     ) : (
                         <div>
                             <header className="text-2xl bg-grey text-center text-blue-600 text-center" style={{ marginTop: "30px", marginBottom: "30px" }}>
-                                Andamento Consumo Giornaliero
+                                Andamento Produzione Giornaliera
                             </header>
                                 <DatePicker
                                     selected={selectedDateSo}
@@ -799,7 +808,7 @@ function DeviceCF() {
                     ) : (
                         <div>
                             <header className="text-2xl bg-grey text-center text-blue-600 text-center" style={{ marginTop: "30px", marginBottom: "30px" }}>
-                                Andamento Consumo Giornaliero
+                                Andamento Produzione Giornaliera
                             </header>
                                 <DatePicker
                                     selected={selectedDateEo}

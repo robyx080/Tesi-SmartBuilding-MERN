@@ -101,103 +101,106 @@ function ConsumoCF() {
             }else{
                 labels = response.data[1].reverse()
                 consumi = response.data[0].reverse()
-                var conTotConsumi = chartConsumoResponse.data[0][0]
-                var conTv = chartConsumoResponse.data[0][1]
-                var conFr = chartConsumoResponse.data[0][2]
-                var conPh = chartConsumoResponse.data[0][3]
-                var conPc = chartConsumoResponse.data[0][4]
-                conTotLabels = chartConsumoResponse.data[1].filter((_, index) => index % 60 === 0)
-                //console.log(consumi)
+                if(email==="reale@gmail.com"){
+                    var conTotConsumi = chartConsumoResponse.data[0][0]
+                    var conTv = chartConsumoResponse.data[0][1]
+                    var conFr = chartConsumoResponse.data[0][2]
+                    var conPh = chartConsumoResponse.data[0][3]
+                    var conPc = chartConsumoResponse.data[0][4]
+                    conTotLabels = chartConsumoResponse.data[1].filter((_, index) => index % 60 === 0)
+                    //console.log(consumi)
 
-                //var labelsProd = chartProduzioneResponse.data[2].filter((_, index) => index % 60 === 0)
-                var produzione=[]
-                //console.log(chartConsumoResponse[0])
-                for(var i=0;i<chartProduzioneResponse.data[0].length;i++){
-                    var sol=chartProduzioneResponse.data[0][i]
-                    var eol=chartProduzioneResponse.data[1][i]
-                    produzione.push(sol+eol)
+                    //var labelsProd = chartProduzioneResponse.data[2].filter((_, index) => index % 60 === 0)
+                    var produzione = []
+                    //console.log(chartConsumoResponse[0])
+                    for (var i = 0; i < chartProduzioneResponse.data[0].length; i++) {
+                        var sol = chartProduzioneResponse.data[0][i]
+                        var eol = chartProduzioneResponse.data[1][i]
+                        produzione.push(sol + eol)
+                    }
+                    //console.log(produzione)
+
+                    setGioChartConsumoEl({
+                        type: 'bar',
+                        labels: conTotLabels,
+                        datasets: [{
+                            label: conTv[0],
+                            data: conTv.slice(1).filter((_, index) => index % 59 === 0),
+                            backgroundColor: 'rgba(0, 255, 0, 0.5)', stack: 'Stack 0',
+                        },
+                        {
+                            label: conFr[0],
+                            data: conFr.slice(1).filter((_, index) => index % 59 === 0),
+                            backgroundColor: 'rgba(255, 0, 0, 0.5)', stack: 'Stack 0',
+                        },
+                        {
+                            label: conPh[0],
+                            data: conPh.slice(1).filter((_, index) => index % 59 === 0),
+                            backgroundColor: 'rgba(255, 255, 0, 0.5)', stack: 'Stack 0',
+                        },
+                        {
+                            label: conPc[0],
+                            data: conPc.slice(1).filter((_, index) => index % 59 === 0),
+                            backgroundColor: 'rgba(0, 192, 192, 0.5)', stack: 'Stack 0',
+                        },
+                        {
+                            label: conTotConsumi[0],
+                            data: conTotConsumi.slice(1).filter((_, index) => index % 59 === 0),
+                            backgroundColor: 'rgba(155, 155, 155, 0.5)', stack: 'Stack 1',
+                        }],
+                        options: {
+                            responsive: true
+                        }
+                    })
+
+                    setChartVS({
+                        labels: conTotLabels,
+                        datasets: [{
+                            type: 'bar',
+                            label: conTv[0],
+                            data: conTv.slice(1).filter((_, index) => index % 59 === 0),
+                            backgroundColor: 'rgba(0, 255, 0, 0.5)', stack: 'Stack 0',
+                        },
+                        {
+                            type: 'bar',
+                            label: conFr[0],
+                            data: conFr.slice(1).filter((_, index) => index % 59 === 0),
+                            backgroundColor: 'rgba(255, 0, 0, 0.5)', stack: 'Stack 0',
+                        },
+                        {
+                            type: 'bar',
+                            label: conPh[0],
+                            data: conPh.slice(1).filter((_, index) => index % 59 === 0),
+                            backgroundColor: 'rgba(255, 255, 0, 0.5)', stack: 'Stack 0',
+                        },
+                        {
+                            type: 'bar',
+                            label: conPc[0],
+                            data: conPc.slice(1).filter((_, index) => index % 59 === 0),
+                            backgroundColor: 'rgba(0, 192, 192, 0.5)', stack: 'Stack 0',
+                        },
+                        {
+                            type: 'bar',
+                            label: conTotConsumi[0],
+                            data: conTotConsumi.slice(1).filter((_, index) => index % 59 === 0),
+                            backgroundColor: 'rgba(155, 155, 155, 0.5)', stack: 'Stack 1',
+                        },
+                        {
+                            type: 'line',
+                            label: 'Produzione Solare & Eolica',
+                            data: produzione,
+                            backgroundColor: 'rgb(255, 165, 0)',   //colore dell'area sottostante alla curva  (0.3 è l'opacità)
+                            borderColor: 'rgb(255, 165, 0)',
+                            fill: false,
+                            tension: 0.1,
+                        }],
+                        options: {
+                            responsive: true
+                        }
+                    })
                 }
-                //console.log(produzione)
 
-                setGioChartConsumoEl({
-                    type: 'bar',
-                    labels: conTotLabels,
-                    datasets: [{
-                        label: conTv[0],
-                        data: conTv.slice(1).filter((_, index) => index % 59 === 0),
-                        backgroundColor: 'rgba(0, 255, 0, 0.5)', stack: 'Stack 0',
-                    },
-                    {
-                        label: conFr[0],
-                        data: conFr.slice(1).filter((_, index) => index % 59 === 0),
-                        backgroundColor: 'rgba(255, 0, 0, 0.5)', stack: 'Stack 0',
-                    },
-                    {
-                        label: conPh[0],
-                        data: conPh.slice(1).filter((_, index) => index % 59 === 0),
-                        backgroundColor: 'rgba(255, 255, 0, 0.5)', stack: 'Stack 0',
-                    },
-                    {
-                        label: conPc[0],
-                        data: conPc.slice(1).filter((_, index) => index % 59 === 0),
-                        backgroundColor: 'rgba(0, 192, 192, 0.5)', stack: 'Stack 0',
-                    },
-                    {
-                        label: conTotConsumi[0],
-                        data: conTotConsumi.slice(1).filter((_, index) => index % 59 === 0),
-                        backgroundColor: 'rgba(155, 155, 155, 0.5)', stack: 'Stack 1',
-                    }],
-                    options: {
-                        responsive: true
-                    }
-                })
-
-                setChartVS({
-                    labels: conTotLabels,
-                    datasets: [{
-                        type: 'bar',
-                        label: conTv[0],
-                        data: conTv.slice(1).filter((_, index) => index % 59 === 0),
-                        backgroundColor: 'rgba(0, 255, 0, 0.5)', stack: 'Stack 0',
-                    },
-                    {   
-                        type: 'bar',
-                        label: conFr[0],
-                        data: conFr.slice(1).filter((_, index) => index % 59 === 0),
-                        backgroundColor: 'rgba(255, 0, 0, 0.5)', stack: 'Stack 0',
-                    },
-                    {   
-                        type: 'bar',
-                        label: conPh[0],
-                        data: conPh.slice(1).filter((_, index) => index % 59 === 0),
-                        backgroundColor: 'rgba(255, 255, 0, 0.5)', stack: 'Stack 0',
-                    },
-                    {
-                        type: 'bar',
-                        label: conPc[0],
-                        data: conPc.slice(1).filter((_, index) => index % 59 === 0),
-                        backgroundColor: 'rgba(0, 192, 192, 0.5)', stack: 'Stack 0',
-                    },
-                    {   
-                        type: 'bar',
-                        label: conTotConsumi[0],
-                        data: conTotConsumi.slice(1).filter((_, index) => index % 59 === 0),
-                        backgroundColor: 'rgba(155, 155, 155, 0.5)', stack: 'Stack 1',
-                    },
-                    {
-                        type: 'line',
-                        label: 'Produzione Solare & Eolica',
-                        data: produzione,
-                        backgroundColor: 'rgb(255, 165, 0)',   //colore dell'area sottostante alla curva  (0.3 è l'opacità)
-                        borderColor:'rgb(255, 165, 0)',
-                        fill: false,
-                        tension: 0.1,
-                    }],
-                    options: {
-                        responsive: true
-                    }
-                })
-
+                
                 setChartData({
                     labels: labels,
                     datasets: [
