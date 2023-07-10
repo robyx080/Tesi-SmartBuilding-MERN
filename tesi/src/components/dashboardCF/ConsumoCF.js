@@ -136,7 +136,7 @@ function ConsumoCF() {
                         {
                             label: conPh[0],
                             data: conPh.slice(1).filter((_, index) => index % 59 === 0),
-                            backgroundColor: 'rgba(255, 255, 0, 0.5)', stack: 'Stack 0',
+                            backgroundColor: 'rgba(139, 0, 139, 0.5)', stack: 'Stack 0',
                         },
                         {
                             label: conPc[0],
@@ -171,7 +171,7 @@ function ConsumoCF() {
                             type: 'bar',
                             label: conPh[0],
                             data: conPh.slice(1).filter((_, index) => index % 59 === 0),
-                            backgroundColor: 'rgba(255, 255, 0, 0.5)', stack: 'Stack 0',
+                            backgroundColor: 'rgba(139, 0, 139, 0.5)', stack: 'Stack 0',
                         },
                         {
                             type: 'bar',
@@ -254,7 +254,7 @@ function ConsumoCF() {
                 {
                     label: conPh[0],
                     data: conPh.slice(1).filter((_, index) => index % 59 === 0),
-                    backgroundColor: 'rgba(255, 255, 0, 0.5)', stack: 'Stack 0',
+                    backgroundColor: 'rgba(139, 0, 139, 0.5)', stack: 'Stack 0',
                 },
                 {
                     label: conPc[0],
@@ -316,7 +316,7 @@ function ConsumoCF() {
                     type: 'bar',
                     label: conPh[0],
                     data: conPh.slice(1).filter((_, index) => index % 59 === 0),
-                    backgroundColor: 'rgba(255, 255, 0, 0.5)', stack: 'Stack 0',
+                    backgroundColor: 'rgba(139, 0, 139, 0.5)', stack: 'Stack 0',
                 },
                 {
                     type: 'bar',
